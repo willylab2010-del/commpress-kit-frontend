@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CommPress Kit — ZIP & Document Compressor</title>
+<script src="config.js"></script>
+<style>
+  :root{--bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;--accent:#7c6af7;--accent2:#5de0e6;--text:#e8e8f0;--muted:#6b6b8a;--success:#4caf8a;--warn:#f7a24a;--error:#f76a6a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  header{width:100%;padding:28px 24px 20px;text-align:center;background:linear-gradient(180deg,#1a1040 0%,var(--bg) 100%)}
+  header h1{font-size:1.8rem;font-weight:800}
+  header p{color:var(--muted);margin-top:6px;font-size:.9rem}
+  .nav-links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:14px;font-size:.82rem}
+  .nav-links a{color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:6px;border:1px solid rgba(124,106,247,.3);transition:.2s}
+  .nav-links a:hover{background:rgba(124,106,247,.12)}
+
+  .main{width:100%;max-width:780px;padding:28px 20px 60px;display:flex;flex-direction:column;gap:24px}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px}
+  .tab{flex:1;padding:10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:.88rem;font-weight:600;cursor:pointer;transition:.2s}
+  .tab.active{background:var(--accent);color:#fff}
+
+  /* drop zone */
+  .drop{border:2px dashed var(--border);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface)}
+  .drop.drag{border-color:var(--accent);background:rgba(124,106,247,.07)}
+  .drop-icon{font-size:2.4rem;margin-bottom:10px}
+  .drop h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+  .drop p{font-size:.8rem;color:var(--muted)}
+  input[type=file]{display:none}
+
+  /* options */
+  .options-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .opt-group{display:flex;flex-direction:column;gap:6px;min-width:160px}
+  .opt-group label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.88rem;outline:none;width:100%}
+  .toggle-row{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted)}
+  input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+
+  /* file list */
+  .file-list{display:flex;flex-direction:column;gap:8px}
+  .file-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:.85rem}
+  .file-item .fi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-item .fi-size{color:var(--muted);white-space:nowrap}
+  .file-item .fi-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 4px;transition:.2s}
+  .file-item .fi-remove:hover{color:var(--error)}
+  .file-item .fi-icon{font-size:1.1rem}
+
+  /* action */
+  .btn{padding:12px 32px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;width:100%}
+  .btn:hover{opacity:.9}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* progress */
+  .prog-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .prog-label{font-size:.85rem;color:var(--muted);margin-bottom:10px}
+  .prog-bar-bg{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+  .prog-bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .3s}
+
+  /* results */
+  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .stat{background:var(--bg);border-radius:10px;padding:12px 14px;text-align:center}
+  .stat-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .stat-val{font-size:1.1rem;font-weight:700}
+  .savings-bar-bg{height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+  .savings-bar{height:100%;background:linear-gradient(90deg,var(--success),var(--accent2));border-radius:5px;transition:width 1s}
+  .dl-btn{padding:12px;background:linear-gradient(135deg,var(--success),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block;transition:.2s}
+  .dl-btn:hover{opacity:.9}
+
+  .status{font-size:.85rem;padding:10px 14px;border-radius:8px;background:rgba(247,106,106,.1);border:1px solid rgba(247,106,106,.3);color:var(--error)}
+  .status.ok{background:rgba(76,175,138,.1);border-color:rgba(76,175,138,.3);color:var(--success)}
+
+  .info-banner{background:rgba(124,106,247,.07);border:1px solid rgba(124,106,247,.2);border-radius:10px;padding:12px 16px;font-size:.82rem;color:var(--muted);line-height:1.5}
+
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗜️ ZIP & Document Compressor</h1>
+  <p>Compress ZIP archives and Office documents (DOCX, XLSX, PPTX) — server-side, real compression.</p>
+  <div class="nav-links">
+    <a href="home.html">🏠 Home</a>
+    <a href="index.html">🖼️ Images</a>
+    <a href="file-compressor.html">📦 Files</a>
+    <a href="pdf-compressor.html">📄 PDF</a>
+    <a href="video-compressor.html">🎬 Video</a>
+    <a href="video-to-audio.html">🎵 Audio</a>
+    <a href="image-converter.html">🔄 Convert</a>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Server status -->
+  <div id="serverBanner" class="info-banner">⏳ Checking server…</div>
+
+  <!-- Mode tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('zip')" id="tabZip">📦 ZIP Multiple Files</button>
+    <button class="tab" onclick="switchTab('docx')" id="tabDocx">📝 DOCX / XLSX / PPTX</button>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="drop" id="dropZone" onclick="document.getElementById('fileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <div class="drop-icon" id="dropIcon">📦</div>
+    <h3 id="dropTitle">Drop files here or click to pick</h3>
+    <p id="dropSub">Any file type — all will be zipped together at max compression</p>
+  </div>
+  <input type="file" id="fileInput" multiple onchange="onFilePick(event)"/>
+
+  <!-- Options -->
+  <div class="options-row" id="optionsRow">
+    <div class="opt-group" id="levelGroup">
+      <label>Compression Level</label>
+      <select id="levelSelect">
+        <option value="9" selected>Maximum (slowest, smallest)</option>
+        <option value="6">Balanced</option>
+        <option value="1">Fast (largest)</option>
+      </select>
+    </div>
+    <div class="toggle-row" id="stripToggle" style="display:none">
+      <input type="checkbox" id="stripMedia" checked/>
+      <label for="stripMedia">Strip embedded thumbnails &amp; preview images (reduces size more)</label>
+    </div>
+  </div>
+
+  <!-- File list -->
+  <div class="file-list" id="fileList"></div>
+
+  <!-- Compress button -->
+  <button class="btn" id="compressBtn" onclick="compress()" disabled>Compress</button>
+
+  <!-- Progress -->
+  <div class="prog-wrap" id="progWrap" style="display:none">
+    <div class="prog-label" id="progLabel">Uploading…</div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+  </div>
+
+  <!-- Status -->
+  <div class="status" id="statusMsg" style="display:none"></div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard" style="display:none">
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Original</div><div class="stat-val" id="rOrig">—</div></div>
+      <div class="stat"><div class="stat-label">Compressed</div><div class="stat-val" id="rComp">—</div></div>
+      <div class="stat"><div class="stat-label">Saved</div><div class="stat-val" id="rSavings" style="color:var(--success)">—</div></div>
+    </div>
+    <div class="savings-bar-bg"><div class="savings-bar" id="savingsBar" style="width:0%"></div></div>
+    <a class="dl-btn" id="dlBtn" href="#" download>⬇ Download Compressed File</a>
+  </div>
+
+</div>
+
+<footer>CommPress Kit — ZIP &amp; Document compressor powered by <strong>archiver</strong> + <strong>adm-zip</strong> on the server.</footer>
+
+<script>
+const SERVER = (typeof window.COMPRESSKIT_SERVER !== 'undefined') ? window.COMPRESSKIT_SERVER : 'http://127.0.0.1:3001';
+
+let selectedFiles = [];
+let mode = 'zip'; // 'zip' | 'docx'
+
+// ── Server health ─────────────────────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const r = await fetch(`${SERVER}/api/health`, { signal: AbortSignal.timeout(8000) });
+    const j = await r.json();
+    if (j.ok) {
+      document.getElementById('serverBanner').textContent = '✅ Server ready — compression runs on the server via archiver & adm-zip.';
+      document.getElementById('serverBanner').style.background = 'rgba(76,175,138,.07)';
+      document.getElementById('serverBanner').style.borderColor = 'rgba(76,175,138,.3)';
+      document.getElementById('serverBanner').style.color = 'var(--success)';
+    } else {
+      serverOffline();
+    }
+  } catch { serverOffline(); }
+}
+
+function serverOffline() {
+  document.getElementById('serverBanner').textContent = '⚠️ Server offline — ZIP & document compression requires the server. Start it locally or the Render server may be warming up (try in 30s).';
+  document.getElementById('serverBanner').style.background = 'rgba(247,162,74,.07)';
+  document.getElementById('serverBanner').style.borderColor = 'rgba(247,162,74,.3)';
+  document.getElementById('serverBanner').style.color = 'var(--warn)';
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(m) {
+  mode = m;
+  document.getElementById('tabZip').classList.toggle('active', m === 'zip');
+  document.getElementById('tabDocx').classList.toggle('active', m === 'docx');
+  document.getElementById('levelGroup').style.display = m === 'zip' ? '' : 'none';
+  document.getElementById('stripToggle').style.display = m === 'docx' ? '' : 'none';
+  document.getElementById('dropIcon').textContent = m === 'zip' ? '📦' : '📝';
+  document.getElementById('dropTitle').textContent = m === 'zip'
+    ? 'Drop files here or click to pick'
+    : 'Drop a DOCX, XLSX or PPTX file';
+  document.getElementById('dropSub').textContent = m === 'zip'
+    ? 'Any file type — all will be zipped together at max compression'
+    : 'Re-packs the Office file at maximum compression, strips thumbnail images';
+  document.getElementById('fileInput').multiple = m === 'zip';
+  document.getElementById('fileInput').accept = m === 'docx' ? '.docx,.xlsx,.pptx,.odt,.ods,.odp' : '';
+  selectedFiles = [];
+  renderList();
+  hideResult();
+}
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag'); }
+function onDragLeave() { document.getElementById('dropZone').classList.remove('drag'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  addFiles([...e.dataTransfer.files]);
+}
+function onFilePick(e) { addFiles([...e.target.files]); e.target.value = ''; }
+
+function addFiles(files) {
+  if (mode === 'docx') { selectedFiles = files.slice(0, 1); }
+  else { selectedFiles = [...selectedFiles, ...files]; }
+  renderList();
+}
+
+function removeFile(i) { selectedFiles.splice(i, 1); renderList(); hideResult(); }
+
+function renderList() {
+  const list = document.getElementById('fileList');
+  list.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const ext = f.name.split('.').pop().toUpperCase();
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = `<span class="fi-icon">📄</span>
+      <span class="fi-name">${f.name}</span>
+      <span class="fi-size">${fmtSize(f.size)}</span>
+      <button class="fi-remove" onclick="removeFile(${i})">✕</button>`;
+    list.appendChild(item);
+  });
+  document.getElementById('compressBtn').disabled = selectedFiles.length === 0;
+}
+
+// ── Compression ───────────────────────────────────────────────────────────────
+async function compress() {
+  if (selectedFiles.length === 0) return;
+  hideResult();
+  setStatus('');
+  showProg('Uploading…', 10);
+
+  const form = new FormData();
+  if (mode === 'zip') {
+    selectedFiles.forEach(f => form.append('files', f));
+    form.append('level', document.getElementById('levelSelect').value);
+  } else {
+    form.append('file', selectedFiles[0]);
+    form.append('stripMedia', document.getElementById('stripMedia').checked ? 'true' : 'false');
+  }
+
+  const endpoint = mode === 'zip' ? `${SERVER}/api/compress/zip` : `${SERVER}/api/compress/docx`;
+
+  try {
+    setProg(40, 'Compressing on server…');
+    const r = await fetch(endpoint, { method: 'POST', body: form });
+    setProg(85, 'Finalising…');
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Server error');
+    setProg(100, 'Done!');
+    setTimeout(() => hideProg(), 600);
+    showResult(j);
+  } catch (err) {
+    hideProg();
+    setStatus(err.message, true);
+  }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function showProg(label, pct) {
+  document.getElementById('progWrap').style.display = '';
+  document.getElementById('progLabel').textContent = label;
+  document.getElementById('progBar').style.width = pct + '%';
+}
+function setProg(pct, label) {
+  document.getElementById('progBar').style.width = pct + '%';
+  document.getElementById('progLabel').textContent = label;
+}
+function hideProg() { document.getElementById('progWrap').style.display = 'none'; }
+
+function showResult(j) {
+  document.getElementById('rOrig').textContent = j.originalFmt;
+  document.getElementById('rComp').textContent = j.compressedFmt;
+  document.getElementById('rSavings').textContent = j.savings + '%';
+  document.getElementById('savingsBar').style.width = j.savings + '%';
+  const dl = document.getElementById('dlBtn');
+  dl.href = `${SERVER}${j.url}`;
+  dl.download = j.filename;
+  dl.textContent = `⬇ Download ${j.filename}`;
+  document.getElementById('resultCard').style.display = '';
+}
+function hideResult() { document.getElementById('resultCard').style.display = 'none'; }
+
+function setStatus(msg, isErr) {
+  const el = document.getElementById('statusMsg');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.textContent = msg;
+  el.className = 'status' + (isErr ? '' : ' ok');
+  el.style.display = '';
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+checkServer();
+switchTab('zip');
+</script>
+</body>
+</html>
