@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video Compressor — CompressKit</title>
+<style>
+  :root{--bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;--accent:#7c6af7;--accent2:#5de0e6;--accent3:#f76af7;--text:#e8e8f0;--muted:#6b6b8a;--success:#4caf8a;--danger:#f76a6a;--warn:#f7c06a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  header{width:100%;padding:24px 32px 16px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid var(--border)}
+  header h1{font-size:2rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+  .nav-links{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .nav-links a{color:var(--accent);text-decoration:none;font-size:.85rem;padding:6px 14px;border:1px solid var(--border);border-radius:6px;transition:.2s}
+  .nav-links a:hover{border-color:var(--accent);background:#1f1f30}
+  main{width:100%;max-width:800px;padding:32px 20px;flex:1}
+  .server-banner{background:#0f1a0f;border:1px solid #1e4d1e;border-radius:10px;padding:13px 18px;font-size:.84rem;color:#5de0a0;margin-bottom:20px;line-height:1.6}
+  .server-banner.warn{background:#1c1507;border-color:#6b4a00;color:var(--warn)}
+  .server-banner.error{background:#1a0f0f;border-color:#4d1e1e;color:var(--danger)}
+  .server-banner strong{font-weight:700}
+  .mode-tabs{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .mode-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:.85rem;font-weight:600;background:var(--surface);color:var(--muted);transition:.2s;border:none}
+  .mode-tab.active{background:var(--accent);color:#fff}
+  .mode-tab:hover:not(.active){background:#1f1f30;color:var(--text)}
+  .dropzone{border:2px dashed var(--border);border-radius:16px;padding:52px 32px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface);position:relative}
+  .dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:#1f1f30}
+  .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dropzone-icon{font-size:3rem;margin-bottom:12px;display:block}
+  .dropzone h2{font-size:1.1rem}
+  .dropzone p{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .btn-pick{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#fff;border-radius:8px;font-size:.9rem;font-weight:600;pointer-events:none}
+  #video-preview-wrap{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none}
+  #video-preview{width:100%;max-height:280px;display:block;background:#000}
+  .video-meta{padding:12px 16px;font-size:.85rem;color:var(--muted);display:flex;gap:20px;flex-wrap:wrap}
+  .video-meta span strong{color:var(--text)}
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+  .cg{flex:1;min-width:140px}
+  .cg label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;outline:none;cursor:pointer;width:100%}
+  select:focus{border-color:var(--accent)}
+  .btn{padding:11px 28px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn:hover{opacity:.9;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  #progress-wrap{margin-top:20px;display:none}
+  #progress-label{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+  .prog-bar-bg{background:var(--border);border-radius:4px;height:8px;overflow:hidden}
+  .prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;width:0;transition:width .4s}
+  #result-box{margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;display:none}
+  .stat-row{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:20px}
+  .stat{flex:1;min-width:110px;text-align:center}
+  .stat-val{font-size:1.5rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .stat-lbl{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+  #out-preview{width:100%;max-height:260px;border-radius:8px;background:#000;display:none;margin-bottom:16px}
+  .btn-dl{display:block;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;text-align:center;text-decoration:none}
+  .btn-dl:hover{opacity:.85}
+  #status{text-align:center;color:var(--muted);font-size:.85rem;margin-top:14px;min-height:20px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+  @media(max-width:540px){.controls{flex-direction:column}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 Video Compressor</h1>
+  <p>Server mode: real H.264 compression via FFmpeg. Browser mode: WebM re-encode.</p>
+  <div class="nav-links">
+    <a href="home.html">🏠 Home</a>
+    <a href="index.html">🖼️ Images</a>
+    <a href="file-compressor.html">🗜️ Files</a>
+    <a href="pdf-compressor.html">📄 PDF</a>
+  </div>
+</header>
+<main>
+  <div id="serverBanner" class="server-banner"><span class="spinner"></span> Checking server…</div>
+
+  <!-- Mode selector -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tabServer" onclick="setMode('server')">🖥️ Server (FFmpeg)</button>
+    <button class="mode-tab" id="tabBrowser" onclick="setMode('browser')">🌐 Browser (no server)</button>
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept="video/*" />
+    <span class="dropzone-icon">🎬</span>
+    <h2>Drop a video here</h2>
+    <p>MP4 · WebM · MOV · AVI · MKV · WMV</p>
+    <span class="btn-pick">Choose Video</span>
+  </div>
+
+  <div id="video-preview-wrap">
+    <video id="video-preview" controls preload="metadata" muted></video>
+    <div class="video-meta">
+      <span><strong id="meta-name">—</strong></span>
+      <span>Size: <strong id="meta-size">—</strong></span>
+      <span>Duration: <strong id="meta-dur">—</strong></span>
+      <span>Resolution: <strong id="meta-res">—</strong></span>
+    </div>
+  </div>
+
+  <!-- Server controls -->
+  <div class="controls" id="serverControls">
+    <div class="cg">
+      <label>Quality</label>
+      <select id="serverMode">
+        <option value="high">High (CRF 18 — large file)</option>
+        <option value="medium" selected>Medium (CRF 28 — balanced)</option>
+        <option value="low">Low (CRF 35 — small file)</option>
+        <option value="mobile">Mobile (720p, CRF 35)</option>
+      </select>
+    </div>
+    <button class="btn" id="serverBtn" disabled>Compress with FFmpeg</button>
+  </div>
+
+  <!-- Browser controls -->
+  <div class="controls" id="browserControls" style="display:none">
+    <div class="cg">
+      <label>Output Format</label>
+      <select id="fmtSelect">
+        <option value="video/webm;codecs=vp9">WebM / VP9</option>
+        <option value="video/webm;codecs=vp8">WebM / VP8</option>
+      </select>
+    </div>
+    <div class="cg">
+      <label>Scale</label>
+      <select id="scaleSelect">
+        <option value="1">Original</option>
+        <option value="0.75">75%</option>
+        <option value="0.5" selected>50%</option>
+        <option value="0.25">25%</option>
+      </select>
+    </div>
+    <div class="cg">
+      <label>Bitrate</label>
+      <select id="bitrateSelect">
+        <option value="4000000">4 Mbps</option>
+        <option value="1500000" selected>1.5 Mbps</option>
+        <option value="800000">800 Kbps</option>
+        <option value="400000">400 Kbps</option>
+      </select>
+    </div>
+    <button class="btn" id="browserBtn" disabled>Compress in Browser</button>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label">Processing…</div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+  </div>
+  <div id="status"></div>
+
+  <div id="result-box">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="st-orig">—</div><div class="stat-lbl">Original</div></div>
+      <div class="stat"><div class="stat-val" id="st-comp">—</div><div class="stat-lbl">Compressed</div></div>
+      <div class="stat"><div class="stat-val" id="st-saved">—</div><div class="stat-lbl">Saved</div></div>
+      <div class="stat"><div class="stat-val" id="st-ratio">—</div><div class="stat-lbl">Ratio</div></div>
+    </div>
+    <video id="out-preview" controls></video>
+    <a class="btn-dl" id="dlLink" href="#" download>⬇ Download Video</a>
+  </div>
+</main>
+<footer>Server files are automatically deleted after 10 minutes.</footer>
+
+<script src="config.js"></script>
+<script>
+const SERVER = (window.COMPRESSKIT_SERVER || 'http://127.0.0.1:3001').replace(/\/$/, '');
+let videoFile = null;
+let currentMode = 'server';
+let serverHasFfmpeg = false;
+
+// ── Health check ──────────────────────────────────────────────────────────────
+async function checkServer() {
+  const banner = document.getElementById('serverBanner');
+  try {
+    const r = await fetch(`${SERVER}/api/health`, { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    serverHasFfmpeg = !!d.ffmpeg;
+    if (!d.ffmpeg) {
+      banner.className = 'server-banner warn';
+      banner.innerHTML = `⚠️ <strong>Server running but FFmpeg not found.</strong>
+        <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener" style="color:var(--accent2)">Install FFmpeg</a>
+        then restart the server. Use Browser mode in the meantime.`;
+      setMode('browser');
+    } else {
+      banner.className = 'server-banner';
+      banner.innerHTML = `✅ <strong>Server ready.</strong> FFmpeg installed. Server compression available.`;
+    }
+  } catch {
+    serverHasFfmpeg = false;
+    banner.className = 'server-banner error';
+    banner.innerHTML = `❌ <strong>Server not running.</strong> Start it:
+      <code style="background:#111;padding:2px 6px;border-radius:4px">cd compresskit-server && npm install && npm start</code>
+      — or use Browser mode below.`;
+    setMode('browser');
+  }
+}
+checkServer();
+
+// ── Mode switch ───────────────────────────────────────────────────────────────
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('tabServer').className  = 'mode-tab' + (m === 'server'  ? ' active' : '');
+  document.getElementById('tabBrowser').className = 'mode-tab' + (m === 'browser' ? ' active' : '');
+  document.getElementById('serverControls').style.display  = m === 'server'  ? 'flex' : 'none';
+  document.getElementById('browserControls').style.display = m === 'browser' ? 'flex' : 'none';
+}
+
+// ── File pick ─────────────────────────────────────────────────────────────────
+const dropzone    = document.getElementById('dropzone');
+const fileInput   = document.getElementById('fileInput');
+const videoPreview= document.getElementById('video-preview');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+function handleFile(f) {
+  if (!f || !f.type.startsWith('video/')) { setStatus('Please select a video file.', true); return; }
+  videoFile = f;
+  const url = URL.createObjectURL(f);
+  videoPreview.src = url;
+  document.getElementById('video-preview-wrap').style.display = 'block';
+  document.getElementById('meta-name').textContent = f.name;
+  document.getElementById('meta-size').textContent = fmtSize(f.size);
+  videoPreview.onloadedmetadata = () => {
+    document.getElementById('meta-dur').textContent = fmtDur(videoPreview.duration);
+    document.getElementById('meta-res').textContent = `${videoPreview.videoWidth}×${videoPreview.videoHeight}`;
+  };
+  document.getElementById('serverBtn').disabled = false;
+  document.getElementById('browserBtn').disabled = false;
+  document.getElementById('result-box').style.display = 'none';
+  setStatus('Ready — choose a mode and hit Compress.');
+}
+
+// ── SERVER compression ────────────────────────────────────────────────────────
+document.getElementById('serverBtn').addEventListener('click', async () => {
+  if (!videoFile) return;
+  const btn      = document.getElementById('serverBtn');
+  const progWrap = document.getElementById('progress-wrap');
+  const progBar  = document.getElementById('progBar');
+  const progLabel= document.getElementById('progress-label');
+  const mode     = document.getElementById('serverMode').value;
+
+  btn.disabled = true;
+  document.getElementById('result-box').style.display = 'none';
+  progWrap.style.display = 'block';
+  progBar.style.width = '5%';
+  progLabel.textContent = 'Uploading…';
+  setStatus('<span class="spinner"></span>Uploading to server…');
+
+  const form = new FormData();
+  form.append('file', videoFile);
+  form.append('mode', mode);
+
+  try {
+    // Fake upload progress (XHR for real progress)
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${SERVER}/api/compress/video`);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 40);
+        progBar.style.width = pct + '%';
+        progLabel.textContent = `Uploading… ${pct}%`;
+      }
+    };
+
+    const data = await new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch { reject(new Error('Invalid server response')); }
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(form);
+    });
+
+    if (xhr.status !== 200) {
+      if (data.install) {
+        setStatus(`${data.error} — <a href="${data.install}" target="_blank" rel="noopener" style="color:var(--accent2)">Install FFmpeg</a>`, true);
+      } else {
+        setStatus('Error: ' + data.error, true);
+      }
+      progWrap.style.display = 'none';
+      btn.disabled = false;
+      return;
+    }
+
+    progBar.style.width = '100%';
+    progLabel.textContent = 'Done!';
+
+    document.getElementById('st-orig').textContent  = data.origFmt;
+    document.getElementById('st-comp').textContent  = data.compFmt;
+    document.getElementById('st-saved').textContent = fmtSize(Math.max(0, data.origSize - data.compSize));
+    document.getElementById('st-ratio').textContent = data.savedPct + '%';
+
+    const outUrl = SERVER + data.url;
+    const outPrev = document.getElementById('out-preview');
+    outPrev.src = outUrl;
+    outPrev.style.display = 'block';
+
+    const dlLink = document.getElementById('dlLink');
+    dlLink.href     = outUrl;
+    dlLink.download = data.filename;
+    document.getElementById('result-box').style.display = 'block';
+    setStatus(`Done! ${data.savedPct}% saved (${data.origFmt} → ${data.compFmt})`);
+  } catch (err) {
+    setStatus('Could not reach server. Is it running? ' + err.message, true);
+  }
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+});
+
+// ── BROWSER compression (fallback) ───────────────────────────────────────────
+document.getElementById('browserBtn').addEventListener('click', async () => {
+  if (!videoFile) return;
+  const btn      = document.getElementById('browserBtn');
+  const progWrap = document.getElementById('progress-wrap');
+  const progBar  = document.getElementById('progBar');
+  const progLabel= document.getElementById('progress-label');
+  const fmt      = document.getElementById('fmtSelect').value;
+  const scale    = Number(document.getElementById('scaleSelect').value);
+  const bitrate  = Number(document.getElementById('bitrateSelect').value);
+
+  const useMime = MediaRecorder.isTypeSupported(fmt) ? fmt
+    : (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm');
+
+  btn.disabled = true;
+  document.getElementById('result-box').style.display = 'none';
+  progWrap.style.display = 'block';
+  progBar.style.width = '5%';
+  setStatus('<span class="spinner"></span>Setting up canvas encoder…');
+
+  try {
+    const srcUrl = URL.createObjectURL(videoFile);
+    const srcVid = document.createElement('video');
+    srcVid.src = srcUrl; srcVid.muted = true; srcVid.preload = 'auto';
+    await new Promise((res, rej) => { srcVid.onloadedmetadata = res; srcVid.onerror = rej; });
+
+    const W = Math.round(srcVid.videoWidth  * scale);
+    const H = Math.round(srcVid.videoHeight * scale);
+    const dur = srcVid.duration;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const stream = canvas.captureStream(30);
+
+    try {
+      const audioCtx = new AudioContext();
+      const src2 = audioCtx.createMediaElementSource(srcVid);
+      const dest = audioCtx.createMediaStreamDestination();
+      src2.connect(dest); src2.connect(audioCtx.destination);
+      dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    } catch(_) {}
+
+    const recorder = new MediaRecorder(stream, { mimeType: useMime, videoBitsPerSecond: bitrate });
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    const done = new Promise(res => { recorder.onstop = res; });
+
+    recorder.start(100);
+    srcVid.currentTime = 0;
+    await new Promise(r => { srcVid.onseeked = r; });
+    srcVid.play();
+    const t0 = performance.now();
+    const draw = () => {
+      ctx.drawImage(srcVid, 0, 0, W, H);
+      const elapsed = (performance.now() - t0) / 1000;
+      progBar.style.width = Math.min(5 + Math.round((elapsed / dur) * 90), 95) + '%';
+      progLabel.textContent = `Encoding… ${Math.round(elapsed)}s / ${Math.round(dur)}s`;
+      if (!srcVid.ended && !srcVid.paused) requestAnimationFrame(draw);
+    };
+    srcVid.onplay = draw;
+    await new Promise(res => { srcVid.onended = res; });
+    recorder.stop();
+    await done;
+
+    progBar.style.width = '100%';
+    const ext = useMime.includes('mp4') ? 'mp4' : 'webm';
+    const outBlob = new Blob(chunks, { type: useMime });
+    const outUrl  = URL.createObjectURL(outBlob);
+    const baseName = videoFile.name.replace(/\.[^.]+$/, '');
+
+    document.getElementById('st-orig').textContent  = fmtSize(videoFile.size);
+    document.getElementById('st-comp').textContent  = fmtSize(outBlob.size);
+    document.getElementById('st-saved').textContent = fmtSize(Math.max(0, videoFile.size - outBlob.size));
+    document.getElementById('st-ratio').textContent = Math.max(0, Math.round((1 - outBlob.size / videoFile.size) * 100)) + '%';
+
+    const outPrev = document.getElementById('out-preview');
+    outPrev.src = outUrl; outPrev.style.display = 'block';
+    const dlLink = document.getElementById('dlLink');
+    dlLink.href = outUrl; dlLink.download = `${baseName}_compressed.${ext}`;
+    document.getElementById('result-box').style.display = 'block';
+    setStatus(`Done! ${fmtSize(outBlob.size)} (browser WebM encode)`);
+    URL.revokeObjectURL(srcUrl);
+  } catch (err) {
+    setStatus('Error: ' + err.message, true);
+  }
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+});
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(2) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+function fmtDur(s) {
+  return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
+}
+function setStatus(html, isErr = false) {
+  const el = document.getElementById('status');
+  el.innerHTML = html; el.style.color = isErr ? 'var(--danger)' : 'var(--muted)';
+}
+</script>
+</body>
+</html>

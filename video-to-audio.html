@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video to Audio — CompressKit</title>
+<style>
+  :root{--bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;--accent:#7c6af7;--accent2:#5de0e6;--text:#e8e8f0;--muted:#6b6b8a;--success:#4caf8a;--danger:#f76a6a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  header{width:100%;padding:24px 32px 16px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid var(--border)}
+  header h1{font-size:2rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+  .nav-links{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .nav-links a{color:var(--accent);text-decoration:none;font-size:.85rem;padding:6px 14px;border:1px solid var(--border);border-radius:6px;transition:.2s}
+  .nav-links a:hover{border-color:var(--accent);background:#1f1f30}
+  main{width:100%;max-width:700px;padding:32px 20px;flex:1}
+
+  .info-banner{background:#0d1520;border:1px solid #1e3a5f;border-radius:10px;padding:13px 18px;font-size:.84rem;color:#5de0e6;margin-bottom:20px;line-height:1.6}
+  .info-banner strong{font-weight:700}
+
+  .dropzone{border:2px dashed var(--border);border-radius:16px;padding:52px 32px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface);position:relative}
+  .dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:#1f1f30}
+  .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dropzone-icon{font-size:3rem;margin-bottom:12px;display:block}
+  .dropzone h2{font-size:1.1rem}
+  .dropzone p{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .btn-pick{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#fff;border-radius:8px;font-size:.9rem;font-weight:600;pointer-events:none}
+
+  /* File ready */
+  .file-ready{margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:14px}
+  .file-ready-icon{font-size:2rem;flex-shrink:0}
+  .file-ready-name{font-size:.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .file-ready-size{color:var(--muted);font-size:.82rem;flex-shrink:0}
+
+  /* Controls */
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+  .cg{flex:1;min-width:140px}
+  .cg label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;outline:none;cursor:pointer;width:100%}
+  select:focus{border-color:var(--accent)}
+  .format-desc{font-size:.78rem;color:var(--muted);margin-top:6px;line-height:1.4}
+  .btn{padding:11px 28px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn:hover{opacity:.9;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* Progress */
+  #progress-wrap{margin-top:20px;display:none}
+  #progress-label{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+  .prog-bar-bg{background:var(--border);border-radius:4px;height:8px;overflow:hidden}
+  .prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;width:0;transition:width .4s}
+
+  /* Result */
+  #result-box{margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;display:none}
+  .stat-row{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:20px}
+  .stat{flex:1;min-width:110px;text-align:center}
+  .stat-val{font-size:1.5rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .stat-lbl{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+  #audio-preview{width:100%;border-radius:8px;margin-bottom:16px;accent-color:var(--accent)}
+  .btn-dl{display:block;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;text-align:center;text-decoration:none}
+  .btn-dl:hover{opacity:.85}
+
+  #status{text-align:center;color:var(--muted);font-size:.85rem;margin-top:14px;min-height:20px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Server route badge */
+  .route-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;margin-bottom:16px}
+  .route-badge.server{background:rgba(76,175,138,.12);color:var(--success);border:1px solid rgba(76,175,138,.3)}
+  .route-badge.browser{background:rgba(93,224,230,.12);color:var(--accent2);border:1px solid rgba(93,224,230,.3)}
+
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+  @media(max-width:540px){.controls{flex-direction:column}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎵 Video to Audio</h1>
+  <p>Extract audio from any video file. Download as MP3, WAV, or OGG.</p>
+  <div class="nav-links">
+    <a href="home.html">🏠 Home</a>
+    <a href="index.html">🖼️ Images</a>
+    <a href="video-compressor.html">🎬 Video</a>
+    <a href="image-converter.html">🔄 Converter</a>
+    <a href="pdf-compressor.html">📄 PDF</a>
+  </div>
+</header>
+<main>
+
+  <div class="info-banner">
+    🎵 <strong>How it works:</strong> The server uses <strong>FFmpeg</strong> to extract and re-encode audio.
+    If the server isn't running, the browser fallback extracts audio using the <strong>Web Audio API</strong>
+    (outputs WebM/OGG only, quality may vary).
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept="video/*,audio/*" />
+    <span class="dropzone-icon">🎬</span>
+    <h2>Drop a video here</h2>
+    <p>MP4 · MOV · AVI · MKV · WebM · FLV — audio extracted instantly</p>
+    <span class="btn-pick">Choose Video</span>
+  </div>
+
+  <div class="file-ready" id="fileReady">
+    <div class="file-ready-icon">🎬</div>
+    <div class="file-ready-name" id="fileName">—</div>
+    <div class="file-ready-size" id="fileSize">—</div>
+  </div>
+
+  <div class="controls">
+    <div class="cg">
+      <label>Output Format</label>
+      <select id="formatSelect" onchange="updateFormatDesc()">
+        <option value="mp3">MP3 — universal, compressed</option>
+        <option value="wav">WAV — lossless, large file</option>
+        <option value="ogg">OGG — open, good quality</option>
+        <option value="aac">AAC — compact, high quality</option>
+      </select>
+      <div class="format-desc" id="formatDesc">Works everywhere. Best for sharing.</div>
+    </div>
+    <div class="cg">
+      <label>Quality</label>
+      <select id="qualitySelect">
+        <option value="high">High (320 kbps)</option>
+        <option value="medium" selected>Medium (192 kbps)</option>
+        <option value="low">Low (128 kbps)</option>
+        <option value="voice">Voice (64 kbps)</option>
+      </select>
+    </div>
+    <button class="btn" id="extractBtn" disabled>Extract Audio</button>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label">Processing…</div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+  </div>
+  <div id="status"></div>
+
+  <div id="result-box">
+    <div id="routeBadge" class="route-badge server">✅ Extracted via FFmpeg</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="st-orig">—</div><div class="stat-lbl">Video size</div></div>
+      <div class="stat"><div class="stat-val" id="st-audio">—</div><div class="stat-lbl">Audio size</div></div>
+      <div class="stat"><div class="stat-val" id="st-fmt">—</div><div class="stat-lbl">Format</div></div>
+    </div>
+    <audio id="audio-preview" controls></audio>
+    <a class="btn-dl" id="dlLink" href="#" download>⬇ Download Audio</a>
+  </div>
+</main>
+<footer>Files processed locally on your server. Nothing sent to the internet.</footer>
+
+<script src="config.js"></script>
+<script>
+const SERVER = (window.COMPRESSKIT_SERVER || 'http://127.0.0.1:3001').replace(/\/$/, '');
+let selectedFile = null;
+
+const formatDescs = {
+  mp3: 'Works everywhere. Best for sharing.',
+  wav: 'Lossless quality. Large file. Good for editing.',
+  ogg: 'Open format. Good quality. Not supported on all devices.',
+  aac: 'Compact, high quality. Used in iPhone videos.',
+};
+
+function updateFormatDesc() {
+  const fmt = document.getElementById('formatSelect').value;
+  document.getElementById('formatDesc').textContent = formatDescs[fmt] || '';
+}
+
+// ── File pick ─────────────────────────────────────────────────────────────────
+const dropzone  = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+function handleFile(f) {
+  if (!f) return;
+  selectedFile = f;
+  document.getElementById('fileName').textContent = f.name;
+  document.getElementById('fileSize').textContent  = fmtSize(f.size);
+  document.getElementById('fileReady').style.display = 'flex';
+  document.getElementById('extractBtn').disabled = false;
+  document.getElementById('result-box').style.display = 'none';
+  setStatus('');
+}
+
+// ── Extract ───────────────────────────────────────────────────────────────────
+document.getElementById('extractBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn       = document.getElementById('extractBtn');
+  const progWrap  = document.getElementById('progress-wrap');
+  const progBar   = document.getElementById('progBar');
+  const progLabel = document.getElementById('progress-label');
+  const fmt       = document.getElementById('formatSelect').value;
+  const quality   = document.getElementById('qualitySelect').value;
+
+  btn.disabled = true;
+  document.getElementById('result-box').style.display = 'none';
+  progWrap.style.display = 'block';
+  progBar.style.width = '10%';
+  progLabel.textContent = 'Uploading to server…';
+  setStatus('<span class="spinner"></span>Processing…');
+
+  // Try server first
+  let usedServer = false;
+  try {
+    const r = await fetch(`${SERVER}/api/health`, { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    if (d.ffmpeg) usedServer = true;
+  } catch (_) {}
+
+  if (usedServer) {
+    await extractViaServer(fmt, quality, progBar, progLabel);
+  } else {
+    await extractViaBrowser(fmt, progBar, progLabel);
+  }
+
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+});
+
+// ── Server extraction (FFmpeg) ────────────────────────────────────────────────
+async function extractViaServer(fmt, quality, progBar, progLabel) {
+  const form = new FormData();
+  form.append('file', selectedFile);
+  form.append('format', fmt);
+  form.append('quality', quality);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${SERVER}/api/extract-audio`);
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      progBar.style.width = Math.round((e.loaded / e.total) * 50) + '%';
+      progLabel.textContent = `Uploading… ${Math.round(e.loaded / e.total * 100)}%`;
+    }
+  };
+
+  try {
+    const data = await new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error('Invalid response')); }
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(form);
+    });
+
+    if (xhr.status !== 200) { setStatus('Server error: ' + (data.error || 'unknown'), true); return; }
+
+    progBar.style.width = '100%';
+    showResult(SERVER + data.url, data.filename, data.audioSize, fmt, true);
+  } catch (err) {
+    setStatus('Server error: ' + err.message + ' — trying browser fallback…', false);
+    await extractViaBrowser(fmt, progBar, document.getElementById('progress-label'));
+  }
+}
+
+// ── Browser extraction (Web Audio API) ───────────────────────────────────────
+async function extractViaBrowser(fmt, progBar, progLabel) {
+  progLabel.textContent = 'Decoding audio in browser…';
+  progBar.style.width = '30%';
+
+  try {
+    const arrayBuffer = await selectedFile.arrayBuffer();
+    progBar.style.width = '50%';
+
+    const audioCtx = new AudioContext();
+    const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
+    progBar.style.width = '70%';
+
+    // Render to offline context (normalize to mono or stereo)
+    const offline = new OfflineAudioContext(
+      decoded.numberOfChannels, decoded.length, decoded.sampleRate
+    );
+    const src = offline.createBufferSource();
+    src.buffer = decoded;
+    src.connect(offline.destination);
+    src.start();
+    const rendered = await offline.startRendering();
+    progBar.style.width = '85%';
+
+    // Encode to WAV (PCM) — browsers can't encode MP3/AAC natively
+    const wavBlob = audioBufferToWav(rendered);
+    progBar.style.width = '100%';
+
+    const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+    const fileName = `${baseName}_audio.wav`;
+    const url = URL.createObjectURL(wavBlob);
+
+    // Note: browser can only produce WAV regardless of selected format
+    if (fmt !== 'wav') {
+      setStatus('⚠️ Browser mode: exported as WAV (MP3/AAC encoding needs the server). Start the server for ' + fmt.toUpperCase() + '.');
+    }
+    showResult(url, fileName, wavBlob.size, 'wav', false);
+  } catch (err) {
+    setStatus('Could not extract audio: ' + err.message, true);
+  }
+}
+
+// ── WAV encoder ───────────────────────────────────────────────────────────────
+function audioBufferToWav(buffer) {
+  const numCh      = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numSamples = buffer.length;
+  const bytesPerSample = 2; // 16-bit PCM
+  const blockAlign = numCh * bytesPerSample;
+  const dataSize   = numSamples * blockAlign;
+  const wavBuffer  = new ArrayBuffer(44 + dataSize);
+  const view       = new DataView(wavBuffer);
+
+  function writeStr(off, str) { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); }
+  writeStr(0, 'RIFF');
+  view.setUint32(4,  36 + dataSize, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);           // PCM chunk size
+  view.setUint16(20, 1,  true);           // PCM format
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true); // byte rate
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);           // bits per sample
+  writeStr(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  let off = 44;
+  for (let i = 0; i < numSamples; i++) {
+    for (let ch = 0; ch < numCh; ch++) {
+      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+      view.setInt16(off, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+      off += 2;
+    }
+  }
+  return new Blob([wavBuffer], { type: 'audio/wav' });
+}
+
+// ── Show result ───────────────────────────────────────────────────────────────
+function showResult(url, filename, audioSize, fmt, viaServer) {
+  document.getElementById('st-orig').textContent  = fmtSize(selectedFile.size);
+  document.getElementById('st-audio').textContent = fmtSize(audioSize);
+  document.getElementById('st-fmt').textContent   = fmt.toUpperCase();
+
+  const badge = document.getElementById('routeBadge');
+  if (viaServer) {
+    badge.className = 'route-badge server';
+    badge.textContent = '✅ Extracted via FFmpeg';
+  } else {
+    badge.className = 'route-badge browser';
+    badge.textContent = '🌐 Extracted in browser (WAV)';
+  }
+
+  const preview = document.getElementById('audio-preview');
+  preview.src = url;
+
+  const dlLink = document.getElementById('dlLink');
+  dlLink.href     = url;
+  dlLink.download = filename;
+  dlLink.textContent = `⬇ Download ${fmt.toUpperCase()}`;
+
+  document.getElementById('result-box').style.display = 'block';
+  if (viaServer) setStatus(`Done! Audio extracted: ${fmtSize(audioSize)}`);
+}
+
+function fmtSize(b) {
+  if (!b) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function setStatus(html, isErr = false) {
+  const el = document.getElementById('status');
+  el.innerHTML = html; el.style.color = isErr ? 'var(--danger)' : 'var(--muted)';
+}
+</script>
+</body>
+</html>

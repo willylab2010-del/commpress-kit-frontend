@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CompressKit — Free Browser Compressor Tools</title>
+<style>
+  :root {
+    --bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;
+    --accent:#7c6af7;--accent2:#5de0e6;--accent3:#f76af7;
+    --text:#e8e8f0;--muted:#6b6b8a;
+    --success:#4caf8a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+  /* ---- Hero ---- */
+  .hero{width:100%;padding:72px 24px 56px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% 0%, #1e1040 0%, var(--bg) 70%)}
+  .hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%232e2e42' stroke-width='1'%3E%3Cpath d='M0 30h60M30 0v60'/%3E%3C/g%3E%3C/svg%3E") repeat;opacity:.4}
+  .hero-badge{display:inline-block;background:rgba(124,106,247,.15);border:1px solid rgba(124,106,247,.4);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 16px;border-radius:20px;margin-bottom:20px;position:relative}
+  .hero h1{font-size:clamp(2.2rem,6vw,3.6rem);font-weight:800;line-height:1.1;position:relative;background:linear-gradient(135deg,#fff 30%,var(--accent) 60%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hero p{color:var(--muted);font-size:1.1rem;margin-top:16px;max-width:520px;margin-left:auto;margin-right:auto;position:relative;line-height:1.6}
+  .hero-sub{display:flex;gap:20px;justify-content:center;margin-top:28px;flex-wrap:wrap;position:relative}
+  .pill{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:.82rem;color:var(--muted)}
+  .pill span{font-size:1rem}
+
+  /* ---- Cards ---- */
+  .cards-section{padding:0 20px 72px;width:100%;max-width:960px}
+  .section-label{text-align:center;font-size:.8rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:32px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 28px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:16px;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;border-radius:inherit}
+  .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+  .card:hover::before{opacity:1}
+
+  .card-img{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .card-img::before{background:radial-gradient(circle at 30% 30%,rgba(124,106,247,.15),transparent 70%)}
+  .card-img:hover{border-color:var(--accent);box-shadow:0 16px 40px rgba(124,106,247,.2)}
+
+  .card-file{background:linear-gradient(135deg,rgba(76,175,138,.08),var(--surface))}
+  .card-file::before{background:radial-gradient(circle at 30% 30%,rgba(76,175,138,.1),transparent 70%)}
+  .card-file:hover{border-color:#4caf8a;box-shadow:0 16px 40px rgba(76,175,138,.15)}
+
+  .card-vid{background:linear-gradient(135deg,rgba(247,106,247,.08),var(--surface))}
+  .card-vid::before{background:radial-gradient(circle at 30% 30%,rgba(247,106,247,.1),transparent 70%)}
+  .card-vid:hover{border-color:var(--accent3);box-shadow:0 16px 40px rgba(247,106,247,.15)}
+
+  .card-icon{font-size:2.6rem;position:relative}
+  .card-title{font-size:1.3rem;font-weight:700;position:relative}
+  .card-desc{font-size:.88rem;color:var(--muted);line-height:1.6;position:relative;flex:1}
+  .card-features{display:flex;flex-wrap:wrap;gap:8px;position:relative}
+  .feat-tag{font-size:.75rem;padding:4px 10px;border-radius:12px;border:1px solid var(--border);color:var(--muted)}
+  .card-cta{display:flex;align-items:center;justify-content:space-between;margin-top:4px;position:relative}
+  .cta-text{font-size:.9rem;font-weight:600}
+  .card-img .cta-text{color:var(--accent)}
+  .card-file .cta-text{color:var(--success)}
+  .card-vid .cta-text{color:var(--accent3)}
+  .cta-arrow{font-size:1.1rem;transition:transform .2s}
+  .card:hover .cta-arrow{transform:translateX(4px)}
+
+  /* ---- How it works ---- */
+  .how-section{width:100%;max-width:800px;padding:0 20px 72px}
+  .how-section h2{text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:32px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px}
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 20px;text-align:center}
+  .step-num{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:800;font-size:.9rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+  .step h3{font-size:.95rem;font-weight:700;margin-bottom:6px}
+  .step p{font-size:.8rem;color:var(--muted);line-height:1.5}
+
+  /* ---- Privacy banner ---- */
+  .privacy{width:100%;max-width:800px;padding:0 20px 72px}
+  .privacy-box{background:linear-gradient(135deg,rgba(93,224,230,.06),rgba(124,106,247,.06));border:1px solid var(--border);border-radius:16px;padding:28px 32px;display:flex;gap:20px;align-items:flex-start}
+  .privacy-icon{font-size:2.2rem;flex-shrink:0}
+  .privacy-text h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+  .privacy-text p{font-size:.85rem;color:var(--muted);line-height:1.6}
+
+  footer{padding:24px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+  footer a{color:var(--accent);text-decoration:none}
+
+  @media(max-width:420px){.hero{padding:48px 20px 40px}.hero h1{font-size:2rem}}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">Free · No Upload · No Account</div>
+  <h1>CompressKit</h1>
+  <p>Compress images, files, and video — all inside your browser. Your files never leave your device.</p>
+  <div class="hero-sub">
+    <div class="pill"><span>🔒</span> 100% private</div>
+    <div class="pill"><span>⚡</span> Instant processing</div>
+    <div class="pill"><span>🌐</span> No install needed</div>
+    <div class="pill"><span>♾️</span> Unlimited files</div>
+  </div>
+</section>
+
+<!-- Tool cards -->
+<section class="cards-section">
+  <div class="section-label">Pick a tool</div>
+  <div class="cards">
+
+    <a class="card card-img" href="index.html">
+      <div class="card-icon">🖼️</div>
+      <div class="card-title">Image Compressor</div>
+      <div class="card-desc">Shrink JPEG, PNG, and WebP images. Control quality, output format, and max width. Batch-process and download all at once.</div>
+      <div class="card-features">
+        <span class="feat-tag">JPEG · PNG · WebP</span>
+        <span class="feat-tag">Batch upload</span>
+        <span class="feat-tag">Quality slider</span>
+        <span class="feat-tag">Resize</span>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text">Open Image Compressor</span>
+        <span class="cta-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="card card-file" href="file-compressor.html">
+      <div class="card-icon">🗜️</div>
+      <div class="card-title">File Compressor</div>
+      <div class="card-desc">Pack any files — PDFs, documents, code, images — into a compressed ZIP using real Deflate compression.</div>
+      <div class="card-features">
+        <span class="feat-tag">Any file type</span>
+        <span class="feat-tag">ZIP / Deflate</span>
+        <span class="feat-tag">Level 1–9</span>
+        <span class="feat-tag">Multi-file</span>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text">Open File Compressor</span>
+        <span class="cta-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="card card-file" href="pdf-compressor.html" style="background:linear-gradient(135deg,rgba(247,106,106,.08),var(--surface))">
+      <div class="card-icon">📄</div>
+      <div class="card-title">PDF Compressor</div>
+      <div class="card-desc">Compress PDFs using Ghostscript on the local server. Choose from screen, eBook, printer, or prepress quality presets.</div>
+      <div class="card-features">
+        <span class="feat-tag">PDF only</span>
+        <span class="feat-tag">Ghostscript</span>
+        <span class="feat-tag">4 presets</span>
+        <span class="feat-tag">Server-side</span>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text" style="color:var(--danger)">Open PDF Compressor</span>
+        <span class="cta-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="card card-vid" href="video-compressor.html">
+      <div class="card-icon">🎬</div>
+      <div class="card-title">Video Compressor</div>
+      <div class="card-desc">Re-encode MP4 and WebM video to a smaller size. Control bitrate and resolution scale. Uses your browser's built-in codec.</div>
+      <div class="card-features">
+        <span class="feat-tag">MP4 · WebM</span>
+        <span class="feat-tag">VP9 codec</span>
+        <span class="feat-tag">Bitrate control</span>
+        <span class="feat-tag">Scale resize</span>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text">Open Video Compressor</span>
+        <span class="cta-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="card" href="image-converter.html" style="background:linear-gradient(135deg,rgba(93,224,230,.08),var(--surface))">
+      <div class="card-title">Image Converter</div>
+      <div class="card-desc">Convert JPG, PNG, WebP to any format including ICO. Resize by pixels, percentage, or max width. Batch convert many files at once.</div>
+      <div class="card-features">
+        <span class="feat-tag">JPG · PNG · WebP · BMP</span>
+        <span class="feat-tag">ICO multi-size</span>
+        <span class="feat-tag">Resize</span>
+        <span class="feat-tag">Batch</span>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text" style="color:var(--accent2)">Open Image Converter</span>
+        <span class="cta-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="card" href="video-to-audio.html" style="background:linear-gradient(135deg,rgba(247,192,106,.08),var(--surface))">
+      <div class="card-icon">🎵</div>
+      <div class="card-title">Video to Audio</div>
+      <div class="card-desc">Extract audio from any video file. Download as MP3, WAV, OGG, or AAC. Quality presets from voice to high-fidelity.</div>
+      <div class="card-features">
+        <span class="feat-tag">MP3 · WAV · OGG · AAC</span>
+        <span class="feat-tag">FFmpeg server</span>
+        <span class="feat-tag">4 quality levels</span>
+        <span class="feat-tag">Browser fallback</span>
+      </div>
+      <div class="card-cta">
+        <span class="cta-text" style="color:#f7c06a">Extract Audio</span>
+        <span class="cta-arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how-section">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Drop your file</h3>
+      <p>Drag and drop or click to pick files from your device.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Choose settings</h3>
+      <p>Pick quality, format, size or compression level.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Hit Compress</h3>
+      <p>Processing runs entirely inside your browser — no server.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Download</h3>
+      <p>Save the compressed file straight to your device.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Privacy -->
+<section class="privacy">
+  <div class="privacy-box">
+    <div class="privacy-icon">🔐</div>
+    <div class="privacy-text">
+      <h3>Your files stay on your device</h3>
+      <p>All compression runs inside your browser using JavaScript, the Canvas API, and WebCodecs. No file is ever sent to a server. No account, no tracking, no size limits imposed by a backend — just your CPU doing the work locally.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CompressKit — open <a href="index.html">index.html</a> in any modern browser. No install, no server, no cost.
+</footer>
+
+</body>
+</html>

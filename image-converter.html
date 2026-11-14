@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Image Converter & Resizer — CompressKit</title>
+<style>
+  :root{--bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;--accent:#7c6af7;--accent2:#5de0e6;--text:#e8e8f0;--muted:#6b6b8a;--success:#4caf8a;--danger:#f76a6a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  header{width:100%;padding:24px 32px 16px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid var(--border)}
+  header h1{font-size:2rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+  .nav-links{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .nav-links a{color:var(--accent);text-decoration:none;font-size:.85rem;padding:6px 14px;border:1px solid var(--border);border-radius:6px;transition:.2s}
+  .nav-links a:hover{border-color:var(--accent);background:#1f1f30}
+  main{width:100%;max-width:900px;padding:32px 20px;flex:1}
+
+  /* Drop zone */
+  .dropzone{border:2px dashed var(--border);border-radius:16px;padding:48px 32px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface);position:relative}
+  .dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:#1f1f30}
+  .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dropzone-icon{font-size:3rem;margin-bottom:12px;display:block}
+  .dropzone h2{font-size:1.1rem}
+  .dropzone p{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .btn-pick{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#fff;border-radius:8px;font-size:.9rem;font-weight:600;pointer-events:none}
+
+  /* Controls panel */
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:20px}
+  .panel-title{font-size:.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:18px}
+  .row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+  .cg{flex:1;min-width:140px}
+  .cg label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+  select,input[type="number"],input[type="text"]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;outline:none;width:100%}
+  select:focus,input[type="number"]:focus,input[type="text"]:focus{border-color:var(--accent)}
+  .toggle-row{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .toggle{position:relative;width:38px;height:21px;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:var(--border);border-radius:21px;cursor:pointer;transition:.2s}
+  .slider:before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .toggle input:checked + .slider{background:var(--accent)}
+  .toggle input:checked + .slider:before{transform:translateX(17px)}
+  .toggle-label{font-size:.85rem;color:var(--muted)}
+
+  /* ICO sizes */
+  .ico-sizes{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .ico-size-chip{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:.8rem;cursor:pointer;transition:.2s;user-select:none}
+  .ico-size-chip input{margin:0;cursor:pointer;accent-color:var(--accent)}
+  .ico-size-chip:has(input:checked){border-color:var(--accent);background:rgba(124,106,247,.1)}
+
+  .btn{padding:11px 28px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn:hover{opacity:.9;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* Results */
+  #results{margin-top:28px;display:none}
+  #results h3{font-size:.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px}
+  .result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .3s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .result-preview{width:100%;aspect-ratio:16/9;background:#111;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .result-preview img{max-width:100%;max-height:100%;object-fit:contain}
+  .result-preview .ico-preview{font-size:3rem;text-align:center}
+  .result-info{padding:12px 14px}
+  .result-name{font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px}
+  .result-meta{font-size:.77rem;color:var(--muted);margin-bottom:10px}
+  .btn-dl{display:block;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;transition:.2s}
+  .btn-dl:hover{opacity:.85}
+  .dl-all-wrap{margin-top:18px;text-align:center}
+  .btn-dl-all{padding:11px 32px;background:var(--surface);color:var(--accent);border:2px solid var(--accent);border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;transition:.2s}
+  .btn-dl-all:hover{background:var(--accent);color:#fff}
+
+  #status{text-align:center;color:var(--muted);font-size:.85rem;margin-top:14px;min-height:20px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+  @media(max-width:540px){.row{flex-direction:column}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔄 Image Converter & Resizer</h1>
+  <p>Convert JPG/PNG/WebP to any format including ICO. Resize by pixels or percentage. Batch convert.</p>
+  <div class="nav-links">
+    <a href="home.html">🏠 Home</a>
+    <a href="index.html">🗜️ Compressor</a>
+    <a href="file-compressor.html">📁 Files</a>
+    <a href="video-compressor.html">🎬 Video</a>
+    <a href="pdf-compressor.html">📄 PDF</a>
+  </div>
+</header>
+<main>
+
+  <!-- Drop zone -->
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept="image/*" multiple />
+    <span class="dropzone-icon">🖼️</span>
+    <h2>Drop images here</h2>
+    <p>JPEG · PNG · WebP · BMP · GIF · SVG → any format</p>
+    <span class="btn-pick">Choose Images</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="panel-title">Conversion Settings</div>
+    <div class="row">
+      <!-- Output format -->
+      <div class="cg">
+        <label>Output Format</label>
+        <select id="formatSelect">
+          <option value="jpeg">JPEG (.jpg)</option>
+          <option value="png" selected>PNG (.png)</option>
+          <option value="webp">WebP (.webp)</option>
+          <option value="bmp">BMP (.bmp)</option>
+          <option value="ico">ICO (.ico) — multi-size</option>
+        </select>
+      </div>
+      <!-- Quality (hidden for PNG/BMP/ICO) -->
+      <div class="cg" id="qualityCg">
+        <label>Quality — <span id="qualityLbl">92</span>%</label>
+        <input type="range" id="qualityRange" min="10" max="100" value="92"
+          style="-webkit-appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none;width:100%;margin-top:6px"
+          oninput="document.getElementById('qualityLbl').textContent=this.value" />
+      </div>
+    </div>
+
+    <!-- Resize section -->
+    <div style="margin-top:20px">
+      <div class="panel-title" style="margin-bottom:12px">Resize (optional)</div>
+      <div class="row">
+        <div class="cg">
+          <label>Resize Mode</label>
+          <select id="resizeMode" onchange="updateResizeUI()">
+            <option value="none">No resize</option>
+            <option value="pixels">By pixels (W × H)</option>
+            <option value="percent">By percentage</option>
+            <option value="maxwidth">Max width (keep ratio)</option>
+            <option value="maxheight">Max height (keep ratio)</option>
+          </select>
+        </div>
+        <div class="cg" id="widthCg" style="display:none">
+          <label>Width (px)</label>
+          <input type="number" id="widthInput" min="1" max="8000" value="800" placeholder="e.g. 800" />
+        </div>
+        <div class="cg" id="heightCg" style="display:none">
+          <label>Height (px)</label>
+          <input type="number" id="heightInput" min="1" max="8000" value="600" placeholder="e.g. 600" />
+        </div>
+        <div class="cg" id="percentCg" style="display:none">
+          <label>Scale (%)</label>
+          <input type="number" id="percentInput" min="1" max="400" value="50" placeholder="e.g. 50" />
+        </div>
+        <div class="cg" id="maxWCg" style="display:none">
+          <label>Max Width (px)</label>
+          <input type="number" id="maxWInput" min="1" max="8000" value="1280" placeholder="e.g. 1280" />
+        </div>
+        <div class="cg" id="maxHCg" style="display:none">
+          <label>Max Height (px)</label>
+          <input type="number" id="maxHInput" min="1" max="8000" value="720" placeholder="e.g. 720" />
+        </div>
+      </div>
+      <!-- Aspect ratio lock (pixels mode) -->
+      <div class="toggle-row" id="aspectRow" style="display:none;margin-top:12px">
+        <label class="toggle">
+          <input type="checkbox" id="lockAspect" checked />
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Lock aspect ratio (auto-calculate height)</span>
+      </div>
+    </div>
+
+    <!-- ICO sizes (shown only for ICO) -->
+    <div id="icoSizesWrap" style="display:none;margin-top:20px">
+      <div class="panel-title" style="margin-bottom:10px">ICO Sizes to include</div>
+      <div class="ico-sizes" id="icoSizes">
+        <label class="ico-size-chip"><input type="checkbox" value="16" checked />16×16</label>
+        <label class="ico-size-chip"><input type="checkbox" value="24" />24×24</label>
+        <label class="ico-size-chip"><input type="checkbox" value="32" checked />32×32</label>
+        <label class="ico-size-chip"><input type="checkbox" value="48" checked />48×48</label>
+        <label class="ico-size-chip"><input type="checkbox" value="64" />64×64</label>
+        <label class="ico-size-chip"><input type="checkbox" value="128" checked />128×128</label>
+        <label class="ico-size-chip"><input type="checkbox" value="256" checked />256×256</label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:20px">
+      <button class="btn" id="convertBtn" disabled>Convert</button>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <!-- Results -->
+  <div id="results">
+    <h3>Results</h3>
+    <div class="result-grid" id="resultGrid"></div>
+    <div class="dl-all-wrap" id="dlAllWrap" style="display:none">
+      <button class="btn-dl-all" id="dlAllBtn">⬇ Download All</button>
+    </div>
+  </div>
+
+</main>
+<footer>All conversion happens locally — your images never leave your device.</footer>
+
+<script>
+let files = [];
+let outputs = []; // { name, blob, url, w, h }
+
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const convertBtn = document.getElementById('convertBtn');
+const formatSel  = document.getElementById('formatSelect');
+const resizeMode = document.getElementById('resizeMode');
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFiles([...e.dataTransfer.files]); });
+fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
+
+function handleFiles(newFiles) {
+  files = newFiles.filter(f => f.type.startsWith('image/') || f.name.match(/\.(svg|bmp|ico)$/i));
+  if (!files.length) { setStatus('No valid image files selected.', true); return; }
+  setStatus(`${files.length} image${files.length > 1 ? 's' : ''} ready.`);
+  convertBtn.disabled = false;
+  outputs = [];
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('resultGrid').innerHTML = '';
+}
+
+// ── Format change ─────────────────────────────────────────────────────────────
+formatSel.addEventListener('change', () => {
+  const fmt = formatSel.value;
+  document.getElementById('qualityCg').style.display    = (fmt === 'jpeg' || fmt === 'webp') ? '' : 'none';
+  document.getElementById('icoSizesWrap').style.display = fmt === 'ico' ? '' : 'none';
+});
+
+// ── Resize UI ─────────────────────────────────────────────────────────────────
+function updateResizeUI() {
+  const m = resizeMode.value;
+  document.getElementById('widthCg').style.display   = m === 'pixels'    ? '' : 'none';
+  document.getElementById('heightCg').style.display  = m === 'pixels'    ? '' : 'none';
+  document.getElementById('percentCg').style.display = m === 'percent'   ? '' : 'none';
+  document.getElementById('maxWCg').style.display    = m === 'maxwidth'  ? '' : 'none';
+  document.getElementById('maxHCg').style.display    = m === 'maxheight' ? '' : 'none';
+  document.getElementById('aspectRow').style.display = m === 'pixels'    ? '' : 'none';
+}
+
+// Auto-height when width changes with locked aspect ratio
+document.getElementById('widthInput').addEventListener('input', async () => {
+  if (!document.getElementById('lockAspect').checked || !files.length) return;
+  const f = files[0];
+  const img = await loadImg(URL.createObjectURL(f));
+  const ratio = img.naturalHeight / img.naturalWidth;
+  document.getElementById('heightInput').value = Math.round(Number(document.getElementById('widthInput').value) * ratio);
+});
+
+// ── Convert ───────────────────────────────────────────────────────────────────
+convertBtn.addEventListener('click', async () => {
+  if (!files.length) return;
+  convertBtn.disabled = true;
+  outputs = [];
+  document.getElementById('resultGrid').innerHTML = '';
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('dlAllWrap').style.display = 'none';
+
+  const fmt     = formatSel.value;
+  const quality = Number(document.getElementById('qualityRange').value) / 100;
+  const mode    = resizeMode.value;
+
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    setStatus(`<span class="spinner"></span>Converting ${i + 1}/${files.length}: ${f.name}`);
+    try {
+      if (fmt === 'ico') {
+        const result = await convertToICO(f);
+        outputs.push(result);
+        renderCard(result);
+      } else {
+        const result = await convertImage(f, fmt, quality, mode);
+        outputs.push(result);
+        renderCard(result);
+      }
+    } catch (err) {
+      renderErrorCard(f.name, err.message);
+    }
+  }
+
+  setStatus(`Done! ${outputs.length} file${outputs.length !== 1 ? 's' : ''} converted.`);
+  convertBtn.disabled = false;
+  if (outputs.length > 1) document.getElementById('dlAllWrap').style.display = 'block';
+});
+
+// ── Core conversion ───────────────────────────────────────────────────────────
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+async function getResizedDimensions(img, mode) {
+  let w = img.naturalWidth, h = img.naturalHeight;
+  if (mode === 'pixels') {
+    w = Number(document.getElementById('widthInput').value)  || w;
+    h = Number(document.getElementById('heightInput').value) || h;
+  } else if (mode === 'percent') {
+    const pct = Number(document.getElementById('percentInput').value) / 100 || 1;
+    w = Math.round(w * pct); h = Math.round(h * pct);
+  } else if (mode === 'maxwidth') {
+    const mw = Number(document.getElementById('maxWInput').value) || w;
+    if (w > mw) { h = Math.round(h * mw / w); w = mw; }
+  } else if (mode === 'maxheight') {
+    const mh = Number(document.getElementById('maxHInput').value) || h;
+    if (h > mh) { w = Math.round(w * mh / h); h = mh; }
+  }
+  return { w: Math.max(1, w), h: Math.max(1, h) };
+}
+
+async function convertImage(file, fmt, quality, mode) {
+  const url  = URL.createObjectURL(file);
+  const img  = await loadImg(url);
+  URL.revokeObjectURL(url);
+
+  const { w, h } = await getResizedDimensions(img, mode);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  // Fill white background for JPEG (no alpha)
+  if (fmt === 'jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const mimeMap = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', bmp: 'image/bmp' };
+  const extMap  = { jpeg: 'jpg', png: 'png', webp: 'webp', bmp: 'bmp' };
+  const mime    = mimeMap[fmt] || 'image/png';
+  const ext     = extMap[fmt]  || fmt;
+
+  const blob = await new Promise((res, rej) => {
+    canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')),
+      mime, (fmt === 'jpeg' || fmt === 'webp') ? quality : undefined);
+  });
+
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  const name = `${baseName}.${ext}`;
+  return { name, blob, url: URL.createObjectURL(blob), w, h };
+}
+
+// ── ICO generation ────────────────────────────────────────────────────────────
+// Pure JS ICO writer — no server needed
+async function convertToICO(file) {
+  const srcUrl = URL.createObjectURL(file);
+  const img    = await loadImg(srcUrl);
+  URL.revokeObjectURL(srcUrl);
+
+  const selectedSizes = [...document.querySelectorAll('#icoSizes input:checked')]
+    .map(c => Number(c.value)).sort((a, b) => a - b);
+  if (!selectedSizes.length) throw new Error('Select at least one ICO size.');
+
+  // Render each size as raw BGRA bitmap
+  const frames = await Promise.all(selectedSizes.map(async size => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    const imageData = ctx.getImageData(0, 0, size, size);
+    return { size, imageData };
+  }));
+
+  const icoBuffer = buildIcoBuffer(frames);
+  const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  return {
+    name: `${baseName}.ico`,
+    blob,
+    url:  URL.createObjectURL(blob),
+    w: selectedSizes[selectedSizes.length - 1],
+    h: selectedSizes[selectedSizes.length - 1],
+    isIco: true,
+    sizes: selectedSizes,
+  };
+}
+
+function buildIcoBuffer(frames) {
+  // ICO format:
+  // Header (6 bytes) + Directory entries (16 bytes each) + Image data (PNG or BMP per frame)
+  // We store each frame as a 32-bit BMP (BITMAPINFOHEADER + XOR map + AND mask)
+
+  const count = frames.length;
+  const headerSize = 6;
+  const dirEntrySize = 16;
+  const dirSize = count * dirEntrySize;
+
+  // Build BMP data for each frame
+  const bmpDataList = frames.map(({ size, imageData }) => {
+    const bmpHeaderSize = 40; // BITMAPINFOHEADER
+    const rowSize = size * 4; // 32bpp BGRA
+    const xorSize = rowSize * size;
+    const andRowSize = Math.ceil(size / 8) * 4; // padded to 4 bytes
+    const andSize = andRowSize * size;
+    const totalSize = bmpHeaderSize + xorSize + andSize;
+    const buf = new ArrayBuffer(totalSize);
+    const dv  = new DataView(buf);
+    const u8  = new Uint8Array(buf);
+
+    // BITMAPINFOHEADER
+    dv.setUint32(0,  40,     true); // biSize
+    dv.setInt32 (4,  size,   true); // biWidth
+    dv.setInt32 (8,  size*2, true); // biHeight (doubled — includes AND mask)
+    dv.setUint16(12, 1,      true); // biPlanes
+    dv.setUint16(14, 32,     true); // biBitCount
+    dv.setUint32(16, 0,      true); // biCompression (BI_RGB)
+    dv.setUint32(20, xorSize+andSize, true); // biSizeImage
+    // biX/YPels, biClrUsed, biClrImportant = 0
+
+    // XOR map (BGRA, bottom-up)
+    const pixels = imageData.data; // RGBA, top-down
+    let off = bmpHeaderSize;
+    for (let row = size - 1; row >= 0; row--) {
+      for (let col = 0; col < size; col++) {
+        const srcOff = (row * size + col) * 4;
+        u8[off++] = pixels[srcOff + 2]; // B
+        u8[off++] = pixels[srcOff + 1]; // G
+        u8[off++] = pixels[srcOff + 0]; // R
+        u8[off++] = pixels[srcOff + 3]; // A
+      }
+    }
+
+    // AND mask (1-bit alpha, bottom-up, padded)
+    for (let row = size - 1; row >= 0; row--) {
+      for (let byteCol = 0; byteCol < andRowSize; byteCol++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const col = byteCol * 8 + bit;
+          if (col < size) {
+            const alpha = pixels[(row * size + col) * 4 + 3];
+            if (alpha < 128) byte |= (0x80 >> bit); // transparent → bit set
+          }
+        }
+        u8[off++] = byte;
+      }
+    }
+
+    return new Uint8Array(buf);
+  });
+
+  // Calculate offsets
+  const dataOffset = headerSize + dirSize;
+  const offsets = [];
+  let cursor = dataOffset;
+  bmpDataList.forEach(d => { offsets.push(cursor); cursor += d.byteLength; });
+
+  const total = cursor;
+  const result = new ArrayBuffer(total);
+  const dv = new DataView(result);
+  const u8 = new Uint8Array(result);
+
+  // ICO header
+  dv.setUint16(0, 0,     true); // reserved
+  dv.setUint16(2, 1,     true); // type: 1 = ICO
+  dv.setUint16(4, count, true); // image count
+
+  // Directory
+  frames.forEach(({ size }, i) => {
+    const base = headerSize + i * dirEntrySize;
+    u8[base+0] = size === 256 ? 0 : size; // width  (0 = 256)
+    u8[base+1] = size === 256 ? 0 : size; // height (0 = 256)
+    u8[base+2] = 0;  // color count (0 = no palette)
+    u8[base+3] = 0;  // reserved
+    dv.setUint16(base+4, 1,  true); // planes
+    dv.setUint16(base+6, 32, true); // bit count
+    dv.setUint32(base+8,  bmpDataList[i].byteLength, true); // size of image data
+    dv.setUint32(base+12, offsets[i], true); // offset of image data
+  });
+
+  // Image data
+  bmpDataList.forEach((data, i) => u8.set(data, offsets[i]));
+
+  return result;
+}
+
+// ── Render result card ────────────────────────────────────────────────────────
+function renderCard(item) {
+  const card = document.createElement('div');
+  card.className = 'result-card';
+
+  const preview = item.isIco
+    ? `<div class="result-preview"><div class="ico-preview">🖼️<br><small style="font-size:.7rem;color:var(--muted)">${item.sizes.join(', ')}px</small></div></div>`
+    : `<div class="result-preview"><img src="${item.url}" alt="${item.name}" loading="lazy" /></div>`;
+
+  card.innerHTML = `
+    ${preview}
+    <div class="result-info">
+      <div class="result-name" title="${item.name}">${item.name}</div>
+      <div class="result-meta">${item.isIco ? item.sizes.length + ' sizes' : item.w + '×' + item.h + 'px'} · ${fmtSize(item.blob.size)}</div>
+      <a class="btn-dl" href="${item.url}" download="${item.name}">⬇ Download</a>
+    </div>`;
+  document.getElementById('resultGrid').appendChild(card);
+}
+
+function renderErrorCard(name, msg) {
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.innerHTML = `<div class="result-info"><div class="result-name" style="color:var(--danger)">${name}</div><div style="font-size:.8rem;color:var(--muted);margin-top:6px">${msg}</div></div>`;
+  document.getElementById('resultGrid').appendChild(card);
+}
+
+// ── Download all ──────────────────────────────────────────────────────────────
+document.getElementById('dlAllBtn').addEventListener('click', async () => {
+  for (const item of outputs) {
+    const a = document.createElement('a');
+    a.href = item.url; a.download = item.name; a.click();
+    await new Promise(r => setTimeout(r, 200));
+  }
+});
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function setStatus(html, isErr = false) {
+  const el = document.getElementById('status');
+  el.innerHTML = html; el.style.color = isErr ? 'var(--danger)' : 'var(--muted)';
+}
+</script>
+</body>
+</html>

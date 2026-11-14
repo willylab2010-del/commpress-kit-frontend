@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>File Compressor — ZIP</title>
+<style>
+  :root {
+    --bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;
+    --accent:#7c6af7;--accent2:#5de0e6;
+    --text:#e8e8f0;--muted:#6b6b8a;
+    --success:#4caf8a;--danger:#f76a6a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  header{width:100%;padding:24px 32px 16px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid var(--border)}
+  header h1{font-size:2rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+  main{width:100%;max-width:800px;padding:32px 20px;flex:1}
+  .dropzone{border:2px dashed var(--border);border-radius:16px;padding:52px 32px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface);position:relative}
+  .dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:#1f1f30}
+  .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dropzone-icon{font-size:3rem;margin-bottom:12px;display:block}
+  .dropzone h2{font-size:1.1rem}
+  .dropzone p{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .btn-pick{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#fff;border-radius:8px;font-size:.9rem;font-weight:600;pointer-events:none}
+  .file-list{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .file-list-header{padding:12px 20px;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+  .file-item{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border);font-size:.85rem}
+  .file-item:last-child{border-bottom:none}
+  .file-icon{font-size:1.3rem;flex-shrink:0}
+  .file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-size{color:var(--muted);flex-shrink:0}
+  .file-remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;flex-shrink:0;padding:2px 6px;border-radius:4px}
+  .file-remove:hover{background:rgba(247,106,106,.1)}
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+  .cg{flex:1;min-width:140px}
+  .cg label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;outline:none;cursor:pointer;width:100%}
+  select:focus{border-color:var(--accent)}
+  .btn{padding:11px 28px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn:hover{opacity:.9;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  #progress-wrap{margin-top:20px;display:none}
+  #progress-label{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+  .prog-bar-bg{background:var(--border);border-radius:4px;height:8px;overflow:hidden}
+  .prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;width:0;transition:width .3s}
+  #result-box{margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;display:none}
+  .stat-row{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:20px}
+  .stat{flex:1;min-width:120px;text-align:center}
+  .stat-val{font-size:1.6rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .stat-lbl{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+  .btn-dl{display:block;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;text-align:center}
+  .btn-dl:hover{opacity:.85}
+  #status{text-align:center;color:var(--muted);font-size:.85rem;margin-top:14px;min-height:20px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+  .nav-links{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .nav-links a{color:var(--accent);text-decoration:none;font-size:.85rem;padding:6px 14px;border:1px solid var(--border);border-radius:6px;transition:.2s}
+  .nav-links a:hover{border-color:var(--accent);background:#1f1f30}
+  @media(max-width:540px){.controls{flex-direction:column}}
+  .warn-banner{background:#1c1507;border:1px solid #6b4a00;border-radius:10px;padding:13px 18px;font-size:.84rem;color:#f7c06a;margin-top:16px;line-height:1.6;display:none}
+  .warn-banner strong{font-weight:700}
+  .file-warn{font-size:.7rem;padding:2px 7px;border-radius:10px;background:rgba(247,192,106,.12);color:#f7c06a;border:1px solid rgba(247,192,106,.3);flex-shrink:0;white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗜️ File Compressor</h1>
+  <p>Pack any files into a compressed ZIP — 100% in your browser. Nothing uploaded.</p>
+  <div class="nav-links">
+    <a href="index.html">🖼️ Image Compressor</a>
+    <a href="video-compressor.html">🎬 Video Compressor</a>
+    <a href="image-converter.html">🔄 Converter</a>
+  </div>
+</header>
+<main>
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" multiple />
+    <span class="dropzone-icon">📁</span>
+    <h2>Drop any files here</h2>
+    <p>Any file type · Multiple files at once</p>
+    <span class="btn-pick">Choose Files</span>
+  </div>
+
+  <div id="warnBanner" class="warn-banner"></div>
+
+  <div class="file-list" id="fileList" style="display:none">
+    <div class="file-list-header">
+      <span id="fileCount">0 files</span>
+      <span id="totalSize">0 B</span>
+    </div>
+    <div id="fileItems"></div>
+  </div>
+
+  <div class="controls">
+    <div class="cg">
+      <label>Compression Level</label>
+      <select id="levelSelect">
+        <option value="1">Fastest (level 1)</option>
+        <option value="6" selected>Balanced (level 6)</option>
+        <option value="9">Maximum (level 9)</option>
+      </select>
+    </div>
+    <div class="cg">
+      <label>Output filename</label>
+      <input id="zipName" type="text" value="compressed.zip"
+        style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;outline:none;width:100%"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+    </div>
+    <button class="btn" id="compressBtn" disabled>Compress & ZIP</button>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label">Compressing…</div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+  </div>
+  <div id="status"></div>
+
+  <div id="result-box">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="st-orig">—</div><div class="stat-lbl">Original</div></div>
+      <div class="stat"><div class="stat-val" id="st-comp">—</div><div class="stat-lbl">Compressed</div></div>
+      <div class="stat"><div class="stat-val" id="st-saved">—</div><div class="stat-lbl">Saved</div></div>
+      <div class="stat"><div class="stat-val" id="st-ratio">—</div><div class="stat-lbl">Ratio</div></div>
+    </div>
+    <button class="btn-dl" id="dlBtn">⬇ Download ZIP</button>
+  </div>
+</main>
+<footer>All processing happens locally — your files never leave your device.</footer>
+
+<!-- fflate: fast pure-JS gzip/deflate, ~37 KB minified -->
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script>
+let files = [];
+let zipBlob = null;
+
+const dropzone    = document.getElementById('dropzone');
+const fileInput   = document.getElementById('fileInput');
+const compressBtn = document.getElementById('compressBtn');
+const fileList    = document.getElementById('fileList');
+const fileItems   = document.getElementById('fileItems');
+const fileCount   = document.getElementById('fileCount');
+const totalSizeEl = document.getElementById('totalSize');
+const statusEl    = document.getElementById('status');
+const progressWrap= document.getElementById('progress-wrap');
+const progBar     = document.getElementById('progBar');
+const progLabel   = document.getElementById('progress-label');
+const resultBox   = document.getElementById('result-box');
+const dlBtn       = document.getElementById('dlBtn');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); addFiles([...e.dataTransfer.files]); });
+fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+
+function addFiles(newFiles) {
+  newFiles.forEach(f => { if (!files.find(x => x.name === f.name && x.size === f.size)) files.push(f); });
+  renderFileList();
+  checkForPrecompressed();
+}
+
+// Extensions that are already compressed — ZIP won't shrink them
+const PRECOMPRESSED_EXTS = new Set([
+  'jpg','jpeg','png','gif','webp','heic','heif',
+  'mp4','mov','avi','mkv','webm','flv','m4v',
+  'mp3','aac','ogg','flac','m4a','wav',
+  'zip','gz','rar','7z','tar','bz2','xz','zst',
+  'docx','xlsx','pptx','odt','ods','odp',
+  'pdf','epub',
+]);
+
+function getExt(name) { return name.split('.').pop().toLowerCase(); }
+function isPrecompressed(f) { return PRECOMPRESSED_EXTS.has(getExt(f.name)); }
+
+function checkForPrecompressed() {
+  const banner = document.getElementById('warnBanner');
+  const bad = files.filter(isPrecompressed);
+  if (!bad.length) { banner.style.display = 'none'; return; }
+  const names = bad.map(f => `<strong>${f.name}</strong>`).join(', ');
+  banner.innerHTML = `⚠️ ${names} ${bad.length === 1 ? 'is' : 'are'} already compressed internally
+    (DOCX, PDF, JPEG, MP4, etc. are ZIP or codec-compressed files).
+    ZIP wrapping <strong>will not reduce their size</strong> — you'll get roughly the same file size back.
+    For PDFs: use <a href="https://www.ilovepdf.com/compress_pdf" target="_blank" rel="noopener" style="color:var(--accent2)">ilovepdf.com</a>.
+    For DOCX/XLSX: compress images inside Office first. For images: use the
+    <a href="index.html" style="color:var(--accent2)">Image Compressor</a> tab.`;
+  banner.style.display = 'block';
+}
+
+function renderFileList() {
+  if (!files.length) { fileList.style.display = 'none'; compressBtn.disabled = true; return; }
+  fileList.style.display = 'block';
+  compressBtn.disabled = false;
+  fileCount.textContent = `${files.length} file${files.length !== 1 ? 's' : ''}`;
+  totalSizeEl.textContent = fmtSize(files.reduce((s, f) => s + f.size, 0));
+  fileItems.innerHTML = '';
+  files.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `<span class="file-icon">${fileIcon(f.name)}</span>
+      <span class="file-name" title="${f.name}">${f.name}</span>
+      <span class="file-size">${fmtSize(f.size)}</span>
+      ${isPrecompressed(f) ? '<span class="file-warn">won\'t shrink</span>' : ''}
+      <button class="file-remove" data-i="${i}" title="Remove">✕</button>`;
+    fileItems.appendChild(div);
+  });
+  fileItems.querySelectorAll('.file-remove').forEach(btn => {
+    btn.addEventListener('click', () => { files.splice(Number(btn.dataset.i), 1); renderFileList(); checkForPrecompressed(); });
+  });
+}
+
+compressBtn.addEventListener('click', async () => {
+  if (!files.length) return;
+  compressBtn.disabled = true;
+  resultBox.style.display = 'none';
+  progressWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  setStatus('<span class="spinner"></span>Reading files…');
+
+  const level = Number(document.getElementById('levelSelect').value);
+  const zipName = document.getElementById('zipName').value.trim() || 'compressed.zip';
+
+  try {
+    // Read all files as ArrayBuffers
+    const fileData = {};
+    for (let i = 0; i < files.length; i++) {
+      progLabel.textContent = `Reading ${i + 1}/${files.length}: ${files[i].name}`;
+      progBar.style.width = `${Math.round((i / files.length) * 40)}%`;
+      const buf = await readFileAsBuffer(files[i]);
+      fileData[files[i].name] = [new Uint8Array(buf), { level }];
+    }
+
+    setStatus('<span class="spinner"></span>Compressing…');
+    progLabel.textContent = 'Compressing with Deflate…';
+    progBar.style.width = '60%';
+
+    // fflate async zip
+    const zipUint8 = await new Promise((resolve, reject) => {
+      fflate.zip(fileData, { level }, (err, data) => {
+        if (err) reject(err); else resolve(data);
+      });
+    });
+
+    progBar.style.width = '100%';
+    zipBlob = new Blob([zipUint8], { type: 'application/zip' });
+
+    const origSize = files.reduce((s, f) => s + f.size, 0);
+    const compSize = zipBlob.size;
+    const saved    = Math.max(0, origSize - compSize);
+    const ratio    = origSize > 0 ? (compSize / origSize * 100).toFixed(1) : '—';
+
+    document.getElementById('st-orig').textContent  = fmtSize(origSize);
+    document.getElementById('st-comp').textContent  = fmtSize(compSize);
+    document.getElementById('st-saved').textContent = fmtSize(saved);
+    document.getElementById('st-ratio').textContent = ratio + '%';
+
+    resultBox.style.display = 'block';
+    setStatus(`Done! ZIP created: ${fmtSize(compSize)}`);
+
+    dlBtn.onclick = () => {
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = zipName; a.click();
+    };
+  } catch (err) {
+    setStatus('Error: ' + err.message, true);
+  }
+
+  progressWrap.style.display = 'none';
+  compressBtn.disabled = false;
+});
+
+function readFileAsBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const map = {
+    pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📽️', pptx:'📽️',
+    jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
+    mp4:'🎬', mov:'🎬', avi:'🎬', mkv:'🎬', webm:'🎬',
+    mp3:'🎵', wav:'🎵', flac:'🎵', aac:'🎵',
+    zip:'🗜️', rar:'🗜️', tar:'🗜️', gz:'🗜️',
+    js:'💻', ts:'💻', py:'💻', html:'💻', css:'💻', json:'💻',
+    txt:'📋', csv:'📋', md:'📋',
+  };
+  return map[ext] || '📁';
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1024*1024*1024) return (b/1024/1024).toFixed(2) + ' MB';
+  return (b/1024/1024/1024).toFixed(2) + ' GB';
+}
+
+function setStatus(html, isErr = false) {
+  statusEl.innerHTML = html;
+  statusEl.style.color = isErr ? 'var(--danger)' : 'var(--muted)';
+}
+</script>
+</body>
+</html>

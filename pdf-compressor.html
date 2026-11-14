@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PDF Compressor — CompressKit</title>
+<style>
+  :root{--bg:#0f0f13;--surface:#1a1a24;--border:#2e2e42;--accent:#7c6af7;--accent2:#5de0e6;--text:#e8e8f0;--muted:#6b6b8a;--success:#4caf8a;--danger:#f76a6a;--warn:#f7c06a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+  header{width:100%;padding:24px 32px 16px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid var(--border)}
+  header h1{font-size:2rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+  .nav-links{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .nav-links a{color:var(--accent);text-decoration:none;font-size:.85rem;padding:6px 14px;border:1px solid var(--border);border-radius:6px;transition:.2s}
+  .nav-links a:hover{border-color:var(--accent);background:#1f1f30}
+  main{width:100%;max-width:700px;padding:32px 20px;flex:1}
+  .server-banner{background:#0f1a0f;border:1px solid #1e4d1e;border-radius:10px;padding:13px 18px;font-size:.84rem;color:#5de0a0;margin-bottom:20px;line-height:1.6}
+  .server-banner.error{background:#1a0f0f;border-color:#4d1e1e;color:var(--danger)}
+  .server-banner strong{font-weight:700}
+  .dropzone{border:2px dashed var(--border);border-radius:16px;padding:52px 32px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface);position:relative}
+  .dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:#1f1f30}
+  .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dropzone-icon{font-size:3rem;margin-bottom:12px;display:block}
+  .dropzone h2{font-size:1.1rem}
+  .dropzone p{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .btn-pick{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#fff;border-radius:8px;font-size:.9rem;font-weight:600;pointer-events:none}
+  .file-ready{margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:14px}
+  .file-ready-icon{font-size:2rem;flex-shrink:0}
+  .file-ready-name{font-size:.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .file-ready-size{color:var(--muted);font-size:.82rem;flex-shrink:0}
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+  .cg{flex:1;min-width:140px}
+  .cg label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;outline:none;cursor:pointer;width:100%}
+  select:focus{border-color:var(--accent)}
+  .quality-desc{font-size:.78rem;color:var(--muted);margin-top:6px;line-height:1.4}
+  .btn{padding:11px 28px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn:hover{opacity:.9;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  #progress-wrap{margin-top:20px;display:none}
+  #progress-label{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+  .prog-bar-bg{background:var(--border);border-radius:4px;height:8px;overflow:hidden}
+  .prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;width:0;transition:width .4s}
+  #result-box{margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;display:none}
+  .stat-row{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:20px}
+  .stat{flex:1;min-width:110px;text-align:center}
+  .stat-val{font-size:1.5rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .stat-lbl{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+  .btn-dl{display:block;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;text-decoration:none;text-align:center}
+  .btn-dl:hover{opacity:.85}
+  #status{text-align:center;color:var(--muted);font-size:.85rem;margin-top:14px;min-height:20px}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
+  @media(max-width:540px){.controls{flex-direction:column}}
+</style>
+</head>
+<body>
+<header>
+  <h1>📄 PDF Compressor</h1>
+  <p>Compress PDF files using Ghostscript on the server. Files deleted after 10 minutes.</p>
+  <div class="nav-links">
+    <a href="home.html">🏠 Home</a>
+    <a href="index.html">🖼️ Images</a>
+    <a href="file-compressor.html">🗜️ Files</a>
+    <a href="video-compressor.html">🎬 Video</a>
+  </div>
+</header>
+<main>
+  <div id="serverBanner" class="server-banner">
+    <span class="spinner"></span> Checking server…
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept=".pdf,application/pdf" />
+    <span class="dropzone-icon">📄</span>
+    <h2>Drop a PDF here</h2>
+    <p>PDF only · Up to 50 MB · Processed on local server</p>
+    <span class="btn-pick">Choose PDF</span>
+  </div>
+
+  <div class="file-ready" id="fileReady">
+    <div class="file-ready-icon">📄</div>
+    <div class="file-ready-name" id="fileName">—</div>
+    <div class="file-ready-size" id="fileSize">—</div>
+  </div>
+
+  <div class="controls">
+    <div class="cg">
+      <label>Quality Preset</label>
+      <select id="qualitySelect">
+        <option value="screen">Screen (smallest — 72 dpi)</option>
+        <option value="ebook" selected>eBook (balanced — 150 dpi)</option>
+        <option value="printer">Printer (high — 300 dpi)</option>
+        <option value="prepress">Prepress (maximum quality)</option>
+      </select>
+      <div class="quality-desc" id="qualityDesc">Good for email, web, tablets. Best size reduction.</div>
+    </div>
+    <button class="btn" id="compressBtn" disabled>Compress PDF</button>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-label">Uploading…</div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+  </div>
+  <div id="status"></div>
+
+  <div id="result-box">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val" id="st-orig">—</div><div class="stat-lbl">Original</div></div>
+      <div class="stat"><div class="stat-val" id="st-comp">—</div><div class="stat-lbl">Compressed</div></div>
+      <div class="stat"><div class="stat-val" id="st-saved">—</div><div class="stat-lbl">Saved</div></div>
+      <div class="stat"><div class="stat-val" id="st-ratio">—</div><div class="stat-lbl">Ratio</div></div>
+    </div>
+    <a class="btn-dl" id="dlLink" href="#" download>⬇ Download Compressed PDF</a>
+  </div>
+</main>
+<footer>Files are automatically deleted from the server after 10 minutes.</footer>
+
+<script src="config.js"></script>
+<script>
+const SERVER = (window.COMPRESSKIT_SERVER || 'http://127.0.0.1:3001').replace(/\/$/, '');
+let selectedFile = null;
+
+const qualityDescs = {
+  screen:   'Smallest file. 72 dpi images. Good for screen reading only.',
+  ebook:    'Good for email, web, tablets. Best size reduction.',
+  printer:  'High quality. 300 dpi. Moderate file size.',
+  prepress: 'Near-lossless. Use when print quality must be preserved.',
+};
+
+// ── Server health check ───────────────────────────────────────────────────────
+async function checkServer() {
+  const banner = document.getElementById('serverBanner');
+  try {
+    const r = await fetch(`${SERVER}/api/health`, { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    if (!d.ghostscript) {
+      banner.className = 'server-banner error';
+      banner.innerHTML = `⚠️ <strong>Ghostscript not found.</strong> The server is running but Ghostscript is not installed.
+        <a href="https://www.ghostscript.com/download/gsdnld.html" target="_blank" rel="noopener" style="color:var(--accent2)">Download Ghostscript</a>,
+        install it, then restart the server.`;
+    } else {
+      banner.className = 'server-banner';
+      banner.innerHTML = `✅ <strong>Server ready.</strong> Ghostscript is installed. PDF compression available.`;
+    }
+  } catch {
+    banner.className = 'server-banner error';
+    banner.innerHTML = `❌ <strong>Server not running.</strong> Start it first:
+      <code style="background:#111;padding:2px 6px;border-radius:4px">cd compresskit-server && npm install && npm start</code>`;
+  }
+}
+checkServer();
+
+// ── File pick ─────────────────────────────────────────────────────────────────
+const dropzone  = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+function handleFile(f) {
+  if (!f) return;
+  if (!f.name.toLowerCase().endsWith('.pdf')) { setStatus('Only PDF files are supported.', true); return; }
+  selectedFile = f;
+  document.getElementById('fileName').textContent = f.name;
+  document.getElementById('fileSize').textContent = fmtSize(f.size);
+  document.getElementById('fileReady').style.display = 'flex';
+  document.getElementById('compressBtn').disabled = false;
+  document.getElementById('result-box').style.display = 'none';
+  setStatus('');
+}
+
+// ── Quality description ───────────────────────────────────────────────────────
+document.getElementById('qualitySelect').addEventListener('change', function() {
+  document.getElementById('qualityDesc').textContent = qualityDescs[this.value] || '';
+});
+
+// ── Compress ──────────────────────────────────────────────────────────────────
+document.getElementById('compressBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn       = document.getElementById('compressBtn');
+  const progWrap  = document.getElementById('progress-wrap');
+  const progBar   = document.getElementById('progBar');
+  const progLabel = document.getElementById('progress-label');
+  const quality   = document.getElementById('qualitySelect').value;
+
+  btn.disabled = true;
+  document.getElementById('result-box').style.display = 'none';
+  progWrap.style.display = 'block';
+  progBar.style.width = '10%';
+  progLabel.textContent = 'Uploading PDF…';
+  setStatus('<span class="spinner"></span>Sending to server…');
+
+  const form = new FormData();
+  form.append('file', selectedFile);
+  form.append('quality', quality);
+
+  try {
+    progBar.style.width = '40%';
+    progLabel.textContent = 'Compressing with Ghostscript…';
+
+    const r   = await fetch(`${SERVER}/api/compress/pdf`, { method: 'POST', body: form });
+    const data = await r.json();
+
+    if (!r.ok) {
+      if (data.install) {
+        setStatus(`${data.error} — <a href="${data.install}" target="_blank" rel="noopener" style="color:var(--accent2)">Install Ghostscript</a>`, true);
+      } else {
+        setStatus('Error: ' + data.error, true);
+      }
+      progWrap.style.display = 'none';
+      btn.disabled = false;
+      return;
+    }
+
+    progBar.style.width = '100%';
+    document.getElementById('st-orig').textContent  = data.origFmt;
+    document.getElementById('st-comp').textContent  = data.compFmt;
+    document.getElementById('st-saved').textContent = fmtSize(Math.max(0, data.origSize - data.compSize));
+    document.getElementById('st-ratio').textContent = data.savedPct + '%';
+
+    const dlLink = document.getElementById('dlLink');
+    dlLink.href     = SERVER + data.url;
+    dlLink.download = data.filename;
+    document.getElementById('result-box').style.display = 'block';
+    setStatus(`Done! Saved ${data.savedPct}% (${data.origFmt} → ${data.compFmt})`);
+  } catch (err) {
+    setStatus('Could not reach server. Is it running? ' + err.message, true);
+  }
+
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+});
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function setStatus(html, isErr = false) {
+  const el = document.getElementById('status');
+  el.innerHTML = html;
+  el.style.color = isErr ? 'var(--danger)' : 'var(--muted)';
+}
+</script>
+</body>
+</html>
