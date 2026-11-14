@@ -75,6 +75,20 @@
   .privacy-text h3{font-size:1rem;font-weight:700;margin-bottom:6px}
   .privacy-text p{font-size:.85rem;color:var(--muted);line-height:1.6}
 
+  /* ---- External tools ---- */
+  .ext-section{width:100%;max-width:800px;padding:0 20px 72px}
+  .ext-section h2{text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:8px}
+  .ext-sub{text-align:center;font-size:.85rem;color:var(--muted);margin-bottom:28px}
+  .ext-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .ext-card{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;text-decoration:none;color:var(--text);transition:.2s;cursor:pointer}
+  .ext-card:hover{border-color:var(--accent);background:rgba(124,106,247,.07);transform:translateY(-2px)}
+  .ext-icon{font-size:1.6rem;flex-shrink:0}
+  .ext-info{flex:1}
+  .ext-name{font-size:.9rem;font-weight:700;margin-bottom:3px}
+  .ext-desc{font-size:.78rem;color:var(--muted);line-height:1.4}
+  .ext-arrow{font-size:1rem;color:var(--accent);flex-shrink:0;transition:.2s}
+  .ext-card:hover .ext-arrow{transform:translate(2px,-2px)}
+
   footer{padding:24px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);width:100%}
   footer a{color:var(--accent);text-decoration:none}
 
@@ -234,6 +248,51 @@
       <h3>Your files stay on your device</h3>
       <p>All compression runs inside your browser using JavaScript, the Canvas API, and WebCodecs. No file is ever sent to a server. No account, no tracking, no size limits imposed by a backend — just your CPU doing the work locally.</p>
     </div>
+  </div>
+</section>
+
+<!-- External Tools -->
+<section class="ext-section">
+  <h2>Need More? External Tools</h2>
+  <p class="ext-sub">For file types CommPress Kit can't handle natively, these trusted sites pick up the slack.</p>
+  <div class="ext-grid">
+
+    <a class="ext-card" href="https://www.ilovepdf.com/compress_pdf" target="_blank" rel="noopener">
+      <div class="ext-icon">📄</div>
+      <div class="ext-info">
+        <div class="ext-name">ilovepdf — PDF Compress</div>
+        <div class="ext-desc">Shrink PDFs online. Also merges, splits, converts Word/Excel/PPT.</div>
+      </div>
+      <div class="ext-arrow">↗</div>
+    </a>
+
+    <a class="ext-card" href="https://www.ilovepdf.com/pdf_to_word" target="_blank" rel="noopener">
+      <div class="ext-icon">📝</div>
+      <div class="ext-info">
+        <div class="ext-name">ilovepdf — PDF to Word</div>
+        <div class="ext-desc">Convert PDF to editable DOCX. Free, no sign-up needed.</div>
+      </div>
+      <div class="ext-arrow">↗</div>
+    </a>
+
+    <a class="ext-card" href="https://www.ilovepdf.com/compress_pdf" target="_blank" rel="noopener">
+      <div class="ext-icon">🗜️</div>
+      <div class="ext-info">
+        <div class="ext-name">ilovepdf — ZIP & Office Files</div>
+        <div class="ext-desc">Compress DOCX, XLSX, PPTX, and other Office formats online.</div>
+      </div>
+      <div class="ext-arrow">↗</div>
+    </a>
+
+    <a class="ext-card" href="https://www.ilovepdf.com/jpg_to_pdf" target="_blank" rel="noopener">
+      <div class="ext-icon">🖼️</div>
+      <div class="ext-info">
+        <div class="ext-name">ilovepdf — JPG to PDF</div>
+        <div class="ext-desc">Combine multiple images into a single PDF file instantly.</div>
+      </div>
+      <div class="ext-arrow">↗</div>
+    </a>
+
   </div>
 </section>
 
