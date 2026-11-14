@@ -76,7 +76,7 @@
 <body>
 <header>
   <h1>🎵 Video to Audio</h1>
-  <p>Extract audio from any video file. Download as MP3, WAV, or OGG.</p>
+  <p>Extract audio from any video file. Output is always <strong>MP3</strong> when server is running.</p>
   <div class="nav-links">
     <a href="home.html">🏠 Home</a>
     <a href="index.html">🖼️ Images</a>
@@ -88,9 +88,9 @@
 <main>
 
   <div class="info-banner">
-    🎵 <strong>How it works:</strong> The server uses <strong>FFmpeg</strong> to extract and re-encode audio.
+    🎵 <strong>How it works:</strong> The server uses <strong>FFmpeg</strong> to extract and re-encode audio to <strong>MP3</strong>.
     If the server isn't running, the browser fallback extracts audio using the <strong>Web Audio API</strong>
-    (outputs WebM/OGG only, quality may vary).
+    (outputs WAV only — browsers cannot encode MP3 natively).
   </div>
 
   <div class="dropzone" id="dropzone">
@@ -111,7 +111,7 @@
     <div class="cg">
       <label>Output Format</label>
       <select id="formatSelect" onchange="updateFormatDesc()">
-        <option value="mp3">MP3 — universal, compressed</option>
+        <option value="mp3" selected>MP3 — universal, compressed</option>
         <option value="wav">WAV — lossless, large file</option>
         <option value="ogg">OGG — open, good quality</option>
         <option value="aac">AAC — compact, high quality</option>
